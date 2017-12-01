@@ -429,5 +429,10 @@ namespace Microsoft.AspNetCore.Mvc.Formatters.Xml
                 return base.CreateSerializer(type);
             }
         }
+
+        private class IndentingXmlSerializerOutputFormatter : XmlSerializerOutputFormatter
+        {
+
+        }
     }
 }
