@@ -11,6 +11,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using Microsoft.AspNetCore.Mvc.Formatters.Xml;
 using Microsoft.AspNetCore.Mvc.Formatters.Xml.Internal;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Mvc.Formatters
 {
@@ -21,6 +22,7 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
     public class XmlSerializerOutputFormatter : TextOutputFormatter
     {
         private readonly ConcurrentDictionary<Type, object> _serializerCache = new ConcurrentDictionary<Type, object>();
+        private readonly ILogger _logger;
 
         /// <summary>
         /// Initializes a new instance of <see cref="XmlSerializerOutputFormatter"/>
@@ -35,7 +37,17 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
         /// Initializes a new instance of <see cref="XmlSerializerOutputFormatter"/>
         /// </summary>
         /// <param name="writerSettings">The settings to be used by the <see cref="XmlSerializer"/>.</param>
-        public XmlSerializerOutputFormatter(XmlWriterSettings writerSettings)
+        public XmlSerializerOutputFormatter(XmlWriterSettings writerSettings) :
+            this(writerSettings, logger: null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="XmlSerializerOutputFormatter"/>
+        /// </summary>
+        /// <param name="writerSettings">The settings to be used by the <see cref="XmlSerializer"/>.</param>
+        /// <param name="logger"></param>
+        public XmlSerializerOutputFormatter(XmlWriterSettings writerSettings, ILogger logger)
         {
             if (writerSettings == null)
             {
@@ -54,6 +66,8 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
             WrapperProviderFactories = new List<IWrapperProviderFactory>();
             WrapperProviderFactories.Add(new EnumerableWrapperProviderFactory(WrapperProviderFactories));
             WrapperProviderFactories.Add(new SerializableErrorWrapperProviderFactory());
+
+            _logger = logger;
         }
 
         /// <summary>
@@ -114,8 +128,10 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
                 // If the serializer does not support this type it will throw an exception.
                 return new XmlSerializer(type);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger?.LogError($"An error occured while trying to create serializer for the type '{type.FullName}'. Exception: '{ex}'");
+
                 // We do not surface the caught exception because if CanWriteResult returns
                 // false, then this Formatter is not picked up at all.
                 return null;

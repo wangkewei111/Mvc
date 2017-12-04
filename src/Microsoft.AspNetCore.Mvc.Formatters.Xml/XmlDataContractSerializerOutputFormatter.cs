@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.AspNetCore.Mvc.Formatters.Xml;
 using Microsoft.AspNetCore.Mvc.Formatters.Xml.Internal;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AspNetCore.Mvc.Formatters
 {
@@ -21,6 +22,7 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
     public class XmlDataContractSerializerOutputFormatter : TextOutputFormatter
     {
         private readonly ConcurrentDictionary<Type, object> _serializerCache = new ConcurrentDictionary<Type, object>();
+        private readonly ILogger _logger;
         private DataContractSerializerSettings _serializerSettings;
 
         /// <summary>
@@ -36,7 +38,17 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
         /// Initializes a new instance of <see cref="XmlDataContractSerializerOutputFormatter"/>
         /// </summary>
         /// <param name="writerSettings">The settings to be used by the <see cref="DataContractSerializer"/>.</param>
-        public XmlDataContractSerializerOutputFormatter(XmlWriterSettings writerSettings)
+        public XmlDataContractSerializerOutputFormatter(XmlWriterSettings writerSettings) :
+            this(writerSettings, logger: null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="XmlDataContractSerializerOutputFormatter"/>
+        /// </summary>
+        /// <param name="writerSettings">The settings to be used by the <see cref="DataContractSerializer"/>.</param>
+        /// <param name="logger"></param>
+        public XmlDataContractSerializerOutputFormatter(XmlWriterSettings writerSettings, ILogger logger)
         {
             if (writerSettings == null)
             {
@@ -57,6 +69,8 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
             WrapperProviderFactories = new List<IWrapperProviderFactory>();
             WrapperProviderFactories.Add(new EnumerableWrapperProviderFactory(WrapperProviderFactories));
             WrapperProviderFactories.Add(new SerializableErrorWrapperProviderFactory());
+
+            _logger = logger;
         }
 
         /// <summary>
@@ -140,6 +154,8 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
             }
             catch (Exception)
             {
+                _logger?.LogError($"An error occured while trying to create serializer for the type '{type.FullName}'. Exception: '{ex}'");
+
                 // We do not surface the caught exception because if CanWriteResult returns
                 // false, then this Formatter is not picked up at all.
                 return null;
