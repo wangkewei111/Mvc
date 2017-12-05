@@ -36,6 +36,16 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
 
         /// <summary>
         /// Initializes a new instance of <see cref="XmlDataContractSerializerOutputFormatter"/>
+        /// with default XmlWriterSettings
+        /// </summary>
+        /// <param name="logger"></param>
+        public XmlDataContractSerializerOutputFormatter(ILogger logger) :
+            this(FormattingUtilities.GetDefaultXmlWriterSettings(), logger)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="XmlDataContractSerializerOutputFormatter"/>
         /// </summary>
         /// <param name="writerSettings">The settings to be used by the <see cref="DataContractSerializer"/>.</param>
         public XmlDataContractSerializerOutputFormatter(XmlWriterSettings writerSettings) :
@@ -152,9 +162,9 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
                 // If the serializer does not support this type it will throw an exception.
                 return new DataContractSerializer(type, _serializerSettings);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                _logger?.LogError($"An error occured while trying to create serializer for the type '{type.FullName}'. Exception: '{ex}'");
+                _logger?.FailedToCreateDataContractSerializer(type.FullName, ex);
 
                 // We do not surface the caught exception because if CanWriteResult returns
                 // false, then this Formatter is not picked up at all.

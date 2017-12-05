@@ -35,6 +35,16 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
 
         /// <summary>
         /// Initializes a new instance of <see cref="XmlSerializerOutputFormatter"/>
+        /// with default XmlWriterSettings.
+        /// </summary>
+        /// <param name="logger"></param>
+        public XmlSerializerOutputFormatter(ILogger logger) :
+            this(FormattingUtilities.GetDefaultXmlWriterSettings(), logger)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="XmlSerializerOutputFormatter"/>
         /// </summary>
         /// <param name="writerSettings">The settings to be used by the <see cref="XmlSerializer"/>.</param>
         public XmlSerializerOutputFormatter(XmlWriterSettings writerSettings) :
@@ -130,7 +140,7 @@ namespace Microsoft.AspNetCore.Mvc.Formatters
             }
             catch (Exception ex)
             {
-                _logger?.LogError($"An error occured while trying to create serializer for the type '{type.FullName}'. Exception: '{ex}'");
+                _logger?.FailedToCreateXmlSerializer(type.FullName, ex);
 
                 // We do not surface the caught exception because if CanWriteResult returns
                 // false, then this Formatter is not picked up at all.
